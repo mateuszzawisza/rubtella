@@ -4,7 +4,6 @@
 require 'socket'  
 
 
-
 module Rubtella
   
   PORT = 6789
@@ -73,15 +72,25 @@ module Rubtella
     end
 
     def connect
+      puts "connecting to: #{@peer.ip}:#{@peer.port}"
       stream = TCPSocket.new @peer.ip, @peer.port
-      puts "sending request..."
       stream.send ping, 0
       response = stream.recv 1000
       puts "response:"
-      puts response 
+      resp = TCPData::Parser.new response 
+      puts resp.status
+      puts resp.peers.first.ip
+      puts resp.peers.first.port
       stream.send pong, 0
       stream.close 
-      
+
+      if resp.ok?
+        @connected = @peer
+        puts "Connected with #{@connected.ip} #{@connected.port}"
+      else
+        @peer = resp.peers.first 
+        connect
+      end
     end
 
     def ping
@@ -103,21 +112,4 @@ module Rubtella
     end
   end
 
-  class Peer
-    attr_accessor :ip, :port
-
-    def initialize(ip, port)
-      @ip = ip
-      @port = port
-    end
-
-  end
-
 end
-
-   
-#  gnutella = Rubtella::Listener.new
-#  gnutella.listen
-#  gnutella = Rubtella::Sender.new Rubtella::Peer.new("75.72.226.81",8274) 
-#  gnutella.connect
-
