@@ -2,6 +2,7 @@
 # ruby gnutella client
 
 require 'socket'  
+require 'timeout'
 
 
 module Rubtella
@@ -54,61 +55,49 @@ module Rubtella
 
   class Sender
 
-    attr_accessor :peer
+
+    attr_accessor :peer, :connected
     
     def initialize peer
       @peer = peer
-    end
-
-    def send data
-      stream = TCPSocket.new @peer.ip, @peer.port
-      puts "sending request..."
-      puts data
-      stream.send data, 0
-      response = stream.recv 1000
-      puts "response:"
-      puts response 
-      stream.close 
+      @standard_headers = {"User-Agent" => "Rubtella",
+                           "X-Ultrapeer" => "False",
+                           "X-Query-Routing" => "0.1"}
     end
 
     def connect
       puts "connecting to: #{@peer.ip}:#{@peer.port}"
       stream = TCPSocket.new @peer.ip, @peer.port
-      stream.send ping, 0
-      response = stream.recv 1000
+      puts handshake_req
+      stream.send handshake_req, 0
+      @response = stream.recv 1000
+      
       puts "response:"
-      resp = TCPData::Parser.new response 
-      puts resp.status
-      puts resp.peers.first.ip
-      puts resp.peers.first.port
-      stream.send pong, 0
-      stream.close 
+      puts @response
+      resp = HTTPData::Parser.new @response 
+      stream.send handshake_resp, 0
 
       if resp.ok?
         @connected = @peer
+        puts @response
         puts "Connected with #{@connected.ip} #{@connected.port}"
+        resp = stream.recv 1000
+        parsed = TCPData::Parser.new resp
+        puts parsed.message
       else
-        @peer = resp.peers.first 
+        @peer = resp.peers.shift
         connect
       end
     end
 
-    def ping
-     ping = TCPData::Builder.new
-     ping.status = GNUTELLA_REQUEST
-     ping.header["User-Agent"] = "Rubtella"
-     ping.header["X-Ultrapeer"] = "False"
-     ping.header["X-Query-Routing"] = "0.1"
-     ping.build
+    def handshake_req
+     req = HTTPData::Builder.new GNUTELLA_REQUEST, @standard_headers
+     req.build
     end
 
-    def pong
-      pong = TCPData::Builder.new
-      pong.status = GNUTELLA_RESPONSE_OK
-      pong.header["User-Agent"] = "Rubtella"
-      pong.header["X-Ultrapeer"] = "False"
-      pong.header["X-Query-Routing"] = "0.1"
-      pong.build
+    def handshake_resp
+      resp = HTTPData::Builder.new GNUTELLA_RESPONSE_OK, @standard_headers
+      resp.build
     end
   end
 
