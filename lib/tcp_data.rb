@@ -1,7 +1,14 @@
 module Rubtella
   module TCPData
     class Base
-      attr_accessor :guid, :payload_type, :ttl, :hops, :payload_lenght, :binary_data
+      attr_accessor :guid, :payload_type, :ttl, :hops, :payload_lenght, :binary_data, :messages
+
+      @messages ={"\000" => "ping",
+                  "\001" => "pong",
+                  "\100" => "push",
+                  "\200" => "query",
+                  "\201" => "query"}
+      @messages.default = "Unknown Payload Type"
     end 
 
     class Builder < Base
@@ -47,7 +54,6 @@ module Rubtella
         else
           raise "Unknown Payload Type"
         end
-
       end
     end
   end
