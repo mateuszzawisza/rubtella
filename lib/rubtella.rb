@@ -66,25 +66,31 @@ module Rubtella
     end
 
     def connect
-      puts "connecting to: #{@peer.ip}:#{@peer.port}"
-      stream = TCPSocket.new @peer.ip, @peer.port
-      puts handshake_req
-      stream.send handshake_req, 0
-      @response = stream.recv 1000
+      begin
+        puts "connecting to: #{@peer.ip}:#{@peer.port}"
+        stream = TCPSocket.new @peer.ip, @peer.port
+        puts handshake_req
+        Timeout::timeout(5) {stream.send handshake_req, 0}
+        @response = stream.recv 1000
       
-      puts "response:"
-      puts @response
-      resp = HTTPData::Parser.new @response 
-      stream.send handshake_resp, 0
-
-      if resp.ok?
-        @connected = @peer
+        puts "response:"
         puts @response
-        puts "Connected with #{@connected.ip} #{@connected.port}"
-        resp = stream.recv 1000
-        parsed = TCPData::Parser.new resp
-        puts parsed.message
-      else
+        resp = HTTPData::Parser.new @response 
+        stream.send handshake_resp, 0
+
+        if resp.ok?
+          @connected = @peer
+          puts @response
+          puts "Connected with #{@connected.ip} #{@connected.port}"
+          resp = stream.recv 1000
+          parsed = TCPData::Parser.new resp
+          puts parsed.message
+        else
+          @peer = resp.peers.shift
+          connect
+        end
+      rescue Timeout::Error
+        puts "connection expired!\n\n\n\n"
         @peer = resp.peers.shift
         connect
       end
