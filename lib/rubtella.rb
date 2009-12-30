@@ -3,6 +3,8 @@
 
 require 'socket'  
 require 'timeout'
+require 'lib/logger'
+
 
 
 module Rubtella
@@ -11,6 +13,7 @@ module Rubtella
 
   GNUTELLA_REQUEST = "GNUTELLA CONNECT/0.6"
   GNUTELLA_RESPONSE_OK = "GNUTELLA/0.6 200 OK"
+  
    
 
   class Listener
@@ -69,28 +72,24 @@ module Rubtella
       begin
         puts "connecting to: #{@peer.ip}:#{@peer.port}"
         stream = TCPSocket.new @peer.ip, @peer.port
-        puts handshake_req
         Timeout::timeout(5) {stream.send handshake_req, 0}
         @response = stream.recv 1000
       
-        puts "response:"
-        puts @response
         resp = HTTPData::Parser.new @response 
         stream.send handshake_resp, 0
 
         if resp.ok?
+          #connection established
           @connected = @peer
-          puts @response
           puts "Connected with #{@connected.ip} #{@connected.port}"
-          resp = stream.recv 1000
-          parsed = TCPData::Parser.new resp
-          puts parsed.message
+          @@logger.info "Connected with #{@connected.ip} #{@connected.port}"
+          
+          manage_connection stream
         else
           @peer = resp.peers.shift
           connect
         end
       rescue Timeout::Error
-        puts "connection expired!\n\n\n\n"
         @peer = resp.peers.shift
         connect
       end
@@ -104,6 +103,19 @@ module Rubtella
     def handshake_resp
       resp = HTTPData::Builder.new GNUTELLA_RESPONSE_OK, @standard_headers
       resp.build
+    end
+    
+    def manage_connection stream
+      loop do
+        resp = stream.recv 1000
+        @@logger.info resp
+        puts parse(resp)
+      end 
+    end
+    
+    def parse message
+      parsed = TCPData::Parser.new message
+      parsed.message
     end
   end
 
