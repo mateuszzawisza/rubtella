@@ -4,6 +4,8 @@
 require 'socket'  
 require 'timeout'
 require 'lib/logger'
+require 'rubygems'
+require 'ruby-debug'
 
 
 
@@ -80,12 +82,14 @@ module Rubtella
 
         if resp.ok?
           #connection established
+          puts 'connection established'
           @connected = @peer
           puts "Connected with #{@connected.ip} #{@connected.port}"
           @@logger.info "Connected with #{@connected.ip} #{@connected.port}"
           
           manage_connection stream
         else
+          puts 'failed to connect'
           @peer = resp.peers.shift
           connect
         end
@@ -107,15 +111,21 @@ module Rubtella
     
     def manage_connection stream
       loop do
-        resp = stream.recv 1000
+        resp = stream.recv 10000
         @@logger.info resp
-        puts parse(resp)
+        if parse(resp) == "ping"
+          pong = TCPData::Builder::Pong.new
+          stream.send pong.build , 0 
+        end
       end 
     end
     
     def parse message
       parsed = TCPData::Parser.new message
+      puts parsed.message
+      
       parsed.message
+
     end
   end
 
