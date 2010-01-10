@@ -1,6 +1,0 @@
-require 'config/config'
-require 'lib/errors'
-require 'lib/peer'
-require 'lib/tcp_data'
-require 'lib/http_data'
-require 'lib/rubtella'

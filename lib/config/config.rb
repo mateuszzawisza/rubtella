@@ -9,7 +9,7 @@ module Rubtella
       guid
     end
 
-    IP_ADDRESS = "195.150.93.207"
+    IP_ADDRESS = "127.0.0.1"
     PORT = 54321
     GUID  = generate_guid
 

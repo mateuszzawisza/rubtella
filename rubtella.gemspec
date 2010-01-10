@@ -5,29 +5,33 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rubtella}
-  s.version = "0.0.0"
+  s.version = "0.0.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Mateusz Zawisza"]
   s.date = %q{2010-01-10}
+  s.default_executable = %q{rubtellad}
   s.description = %q{Library for Gnuttale in Ruby}
   s.email = %q{mateusz.zawisza@gmail.com}
+  s.executables = ["rubtellad"]
   s.extra_rdoc_files = [
     "README"
   ]
   s.files = [
     ".gitignore",
      "README",
+     "Rakefile",
      "VERSION",
-     "config/config.rb",
-     "lib/errors.rb",
-     "lib/http_data.rb",
-     "lib/logger.rb",
-     "lib/peer.rb",
+     "bin/rubtellad",
+     "lib/config/config.rb",
      "lib/rubtella.rb",
-     "lib/tcp_data.rb",
-     "rubtella.rb",
-     "rubtellad.rb"
+     "lib/rubtella/errors.rb",
+     "lib/rubtella/http_data.rb",
+     "lib/rubtella/logger.rb",
+     "lib/rubtella/peer.rb",
+     "lib/rubtella/rubtella.rb",
+     "lib/rubtella/tcp_data.rb",
+     "rubtella.gemspec"
   ]
   s.homepage = %q{http://github.com/mateuszzawisza/rubtella/}
   s.rdoc_options = ["--charset=UTF-8"]

@@ -10,7 +10,8 @@ class RubtellaLogger
   end
   
   def init_logger
-    log = Logger.new('log/rubtella.log')
+    Dir.mkdir(ENV['HOME'] + "/.rubtella") unless File.exist?(ENV['HOME'] + "/.rubtella")
+    log = Logger.new(ENV['HOME'] + "/.rubtella/rubtella.log")
     log.level = Logger::INFO
     log.formatter = proc{|s,t,p,m|"%5s [%s] (%s) %s :: %s\n" % [s, t.strftime("%Y-%m-%d %H:%M:%S"), $$, p, m]}
     return log
