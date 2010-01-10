@@ -1,10 +1,19 @@
-require 'lib/tcp_data'
+module Rubtella
+  module Config
 
+    # generating guid
+    def self.generate_guid
+      guid = Array.new
+      16.times { guid << rand(255)}
+      
+      guid
+    end
 
-guid = Array.new
-16.times { guid << rand(255)}
+    IP_ADDRESS = "195.150.93.207"
+    PORT = 54321
+    GUID  = generate_guid
 
-GUID =  guid
-
-IP_ADDRESS = "123.123.123.123"
-PORT = 1234
+    
+    
+  end
+end

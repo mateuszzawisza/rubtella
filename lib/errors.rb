@@ -1,3 +1,4 @@
 module Rubtella
-  class UnknownPayload;end
+  class UnknownPayload < StandardError;end
+  class RubtellaError < StandardError;end
 end

@@ -1,21 +1,24 @@
+require 'config/config'
+
 module Rubtella
   module TCPData
     class Base
+      include Rubtella::Config
       attr_accessor :guid, :payload_type, :ttl, :hops, :payload_lenght, :binary_data, :messages, :messages_codes, :rest
 
       @messages ={"\000" => "ping",
                   "\001" => "pong",
                   "\100" => "push",
                   "\200" => "query",
-                  "\201" => "query"}
+                  "\201" => "query_hit"}
 
       @messages.default = "Unknown Payload Type"
 
       @messages_codes = {"ping" => 0,
-                   "pong" => 1,
-                   "push" => 64,
-                   "query" => 128,
-                   "query_hit" =>129}
+                         "pong" => 1,
+                         "push" => 64,
+                         "query" => 128,
+                         "query_hit" =>129}
 
       @messages_codes.default = "Unknown Payload Type"
     end 
@@ -23,10 +26,10 @@ module Rubtella
     class Builder < Base
       def init_messages_codes
         @messages_codes = {"ping" => 0,
-                     "pong" => 1,
-                     "push" => 64,
-                     "query" => 128,
-                     "query_hit" =>129}
+                           "pong" => 1,
+                           "push" => 64,
+                           "query" => 128,
+                           "query_hit" =>129}
 
         @messages_codes.default = "Unknown Payload Type"
       end
@@ -34,6 +37,7 @@ module Rubtella
                             
       def initialize       
         #initailze all stuff
+          init_messages_codes
           
           @guid = GUID
           @ttl = 5
@@ -44,23 +48,27 @@ module Rubtella
       def build
         @data = Array.new
         @guid = GUID
+        
+        build_message
+
         @data = [@guid, @payload_type, @ttl, @hops, @payload_length, @payload]
-        @data
+
+        @binary_data = @data.flatten.pack("C*")
+        @binary_data
       end
 
-      #def self.build_guid
-      #  f = open("/dev/urandom", "r")
-      #  @guid = f.read(16)
-      #  @guid
-      #end
-
-      def self.build_guid
-        @guid = Array.new
-        16.times { @guid << rand(255)}
-        @guid
+      def build_message
+        # this method needs to be implemented by a child class
+        @payload = []
       end
+      
 
       class Ping < Builder
+        def initialize args = nil
+          super()
+
+          @payload_type = @messages_codes["ping"]
+        end
       end
 
       class Pong < Builder
@@ -68,11 +76,9 @@ module Rubtella
         attr_accessor :ip_address , :port
 
         def initialize args = nil
-          init_messages_codes
-          @payload_type = @messages_codes["pong"]
-
           super()
 
+          @payload_type = @messages_codes["pong"]
           @port = build_port PORT
           @ip_address = build_ip IP_ADDRESS
           @files_amount = [0,0,0]
@@ -80,11 +86,8 @@ module Rubtella
 
         end
 
-        def build
+        def build_message
           @payload = [@port, @ip_address, @files_amount, @files_size]
-          build = super
-          @binary_data = build.flatten.pack("C*")
-          @binary_data
         end
 
         def build_port(port)
@@ -95,8 +98,26 @@ module Rubtella
           ip_address.split(".").collect {|b| b.to_i} # .pack("C*")
         end
       end
-    end
 
+      class Query < Builder
+
+          def initialize args = nil
+
+            super()
+
+            @payload_type = @messages_codes["query"]
+            @speed = 0
+            @criteria = args.is_a?(Hash) ? args[:criteria] : ""
+
+          end
+
+          def build_message
+            @payload = [@speed, @criteria.unpack("C*")]
+          end
+
+      end
+
+    end
     class Parser < Base
 
       def initialize data 

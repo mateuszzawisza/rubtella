@@ -11,8 +11,6 @@ require 'ruby-debug'
 
 module Rubtella
   
-  PORT = 6789
-
   GNUTELLA_REQUEST = "GNUTELLA CONNECT/0.6"
   GNUTELLA_RESPONSE_OK = "GNUTELLA/0.6 200 OK"
   
@@ -20,9 +18,12 @@ module Rubtella
 
   class Listener
 
+    include Socket::Constants
+
     #listen for connection
     def listen
-      server = TCPServer.new(PORT)  
+      server = TCPServer.new("0.0.0.0", PORT)  
+      
         
       while (session = server.accept) 
 
@@ -74,7 +75,9 @@ module Rubtella
       begin
         puts "connecting to: #{@peer.ip}:#{@peer.port}"
         stream = TCPSocket.new @peer.ip, @peer.port
-        Timeout::timeout(5) {stream.send handshake_req, 0}
+        timeout(5) do 
+          stream.send handshake_req, 0
+        end
         @response = stream.recv 1000
       
         resp = HTTPData::Parser.new @response 
@@ -96,6 +99,8 @@ module Rubtella
       rescue Timeout::Error
         @peer = resp.peers.shift
         connect
+      rescue => e
+        @@logger.info e.to_s
       end
     end
 
@@ -111,13 +116,20 @@ module Rubtella
     
     def manage_connection stream
       loop do
-        resp = stream.recv 10000
-        @@logger.info resp
+        puts 'we\'re listening..'
+        resp = stream.recv 1000
         if parse(resp) == "ping"
           pong = TCPData::Builder::Pong.new
           stream.send pong.build , 0 
+          puts 'pong send..'
+          stream.close
+          puts 'connection closed'
+          break
         end
       end 
+
+      
+
     end
     
     def parse message
@@ -126,6 +138,16 @@ module Rubtella
       
       parsed.message
 
+    end
+
+    def send_query(text)
+      stream = TCPSocket.new @connected.ip, @connected.port
+      query = TCPData::Builder::Query.new(:criteria => text)
+      @@logger.info "sending query - #{text}"
+      stream.send query.build, 0
+      puts 'we\'re listening..'
+      resp = stream.recv 1000
+      parse(resp)
     end
   end
 
