@@ -1,8 +1,9 @@
 require 'rubtella'
 
+$0 = 'rubtella-base'
 
 @p = fork do
-
+  $0 = 'rubtella'
   Thread.new do
     server = Rubtella::Listener.new
     server.listen
