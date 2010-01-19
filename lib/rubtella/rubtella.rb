@@ -31,30 +31,32 @@ module Rubtella
          Thread.start do  
 
            begin
-             parse_request session
+             manage_connection session
            rescue => e
-             session.puts "Rubtella Server Error: " + e.to_s
-             puts "Rubtella Server Error: " + e.to_s
+             session.puts "Rubtella Listener Error: " + e.to_s
+             @@logger.info "Rubtella Server Error: " + e.to_s
            ensure
              session.close
            end
 
          end
       end   #end loop 
-
     end
+      
+    def manage_connection stream
+      loop do
+        @@logger.info 'we\'re listening..'
+        resp = stream.recv 1000
+        if parse(resp) == "ping"
+          pong = TCPData::Builder::Pong.new
+          stream.send pong.build , 0 
+          @@logger.info 'pong send..'
+          stream.close
+          @@logger.info 'connection closed'
+          break
+        end
+      end 
 
-    def parse_request request
-      req = request.recv 1000
-
-      puts req
-      request.send Sender.pong, 0
-      puts 'response send!'
-      req = request.recv 1000
-      puts 'received content:'
-
-      puts req
-      puts 'received!'
     end
 
   end
@@ -64,44 +66,58 @@ module Rubtella
 
     attr_accessor :peer, :connected
     
-    def initialize peer
-      @peer = peer
+    def initialize peer = nil
+      @peers = Array.new
+      init_peers 
+
+      if peer
+        @peers << peer
+      end
+
+      raise RubtellaError, "No peer address! Pleas add peers to hosts file!" if @peers.empty?
+
+      @peer = @peers.pop
+
       @standard_headers = {"User-Agent" => "Rubtella",
                            "X-Ultrapeer" => "False",
                            "X-Query-Routing" => "0.1"}
+
+    rescue => e
+      @@logger.info e.to_s
     end
 
     def connect
-      begin
-        puts "connecting to: #{@peer.ip}:#{@peer.port}"
+      @@logger.info "connecting to: #{@peer.ip}:#{@peer.port}"
+      stream = nil
+      timeout(5) do 
         stream = TCPSocket.new @peer.ip, @peer.port
-        timeout(5) do 
-          stream.send handshake_req, 0
-        end
-        @response = stream.recv 1000
-      
-        resp = HTTPData::Parser.new @response 
-        stream.send handshake_resp, 0
-
-        if resp.ok?
-          #connection established
-          puts 'connection established'
-          @connected = @peer
-          puts "Connected with #{@connected.ip} #{@connected.port}"
-          @@logger.info "Connected with #{@connected.ip} #{@connected.port}"
-          
-          manage_connection stream
-        else
-          puts 'failed to connect'
-          @peer = resp.peers.shift
-          connect
-        end
-      rescue Timeout::Error
-        @peer = resp.peers.shift
-        connect
-      rescue => e
-        @@logger.info e.to_s
+        stream.send handshake_req, 0
       end
+      @response = stream.recv 1000
+      
+      resp = HTTPData::Parser.new @response 
+      stream.send handshake_resp, 0
+
+      if resp.ok?
+        #connection established
+        @@logger.info 'connection established'
+        @connected = @peer
+        @@logger.info "Connected with #{@connected.ip} #{@connected.port}"
+        @@logger.info "Connected with #{@connected.ip} #{@connected.port}"
+        
+        manage_connection stream
+      else
+        @@logger.info 'failed to connect'
+        @peers.concat resp.peers
+        @peer = @peers.pop
+        connect
+      end
+    rescue Timeout::Error,Errno::ECONNREFUSED
+      @@logger.info "Timeout"
+      @peer = resp.peers.shift
+      connect
+    rescue => e
+      @@logger.info e.to_s
     end
 
     def handshake_req
@@ -116,14 +132,14 @@ module Rubtella
     
     def manage_connection stream
       loop do
-        puts 'we\'re listening..'
+        @@logger.info 'we\'re listening..'
         resp = stream.recv 1000
         if parse(resp) == "ping"
           pong = TCPData::Builder::Pong.new
           stream.send pong.build , 0 
-          puts 'pong send..'
+          @@logger.info 'pong send..'
           stream.close
-          puts 'connection closed'
+          @@logger.info 'connection closed'
           break
         end
       end 
@@ -134,7 +150,7 @@ module Rubtella
     
     def parse message
       parsed = TCPData::Parser.new message
-      puts parsed.message
+      @@logger.info parsed.message
       
       parsed.message
 
@@ -145,9 +161,18 @@ module Rubtella
       query = TCPData::Builder::Query.new(:criteria => text)
       @@logger.info "sending query - #{text}"
       stream.send query.build, 0
-      puts 'we\'re listening..'
+      @@logger.info 'we\'re listening..'
       resp = stream.recv 1000
       parse(resp)
+    end
+
+    def init_peers
+      if File.exist?(ENV["HOME"] + "/.rubtella/hosts")
+        hosts_file = File.open ENV["HOME"] + "/.rubtella/hosts"
+        hosts = hosts_file.read
+        hosts.split("\n")
+        hosts.each {|h| @peers << Peer.new(*(h.split(":")))}
+      end
     end
   end
 

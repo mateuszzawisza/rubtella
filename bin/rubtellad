@@ -12,7 +12,7 @@ $0 = 'rubtella-base'
   end
   
   Thread.new do
-    gnutella = Rubtella::Sender.new Rubtella::Peer.new("70.188.16.73",38093) 
+    gnutella = Rubtella::Sender.new
     gnutella.connect
     gnutella.send_query("doors")
   end
