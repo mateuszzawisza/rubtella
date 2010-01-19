@@ -27,6 +27,7 @@ module Rubtella
     PORT = 54321 unless defined? PORT
 
     GUID  = generate_guid
+    PID_FILE = ENV["HOME"] + "/.rubtella/rubtella.pid"
 
     
     

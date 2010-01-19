@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+
+require 'rubtella'
+
+case ARGV[0]
+when "start"
+  $0 = 'rubtella-base'
+  
+  @p = fork do
+    $0 = 'rubtella'
+    Signal.trap("TERM") do
+      @@logger.info "terminating..."
+      File.delete Rubtella::Config::PID_FILE if File.exist? Rubtella::Config::PID_FILE
+      exit
+    end
+  
+    Thread.new do
+      server = Rubtella::Listener.new
+      server.listen
+    end
+    
+    Thread.new do
+      gnutella = Rubtella::Sender.new
+      gnutella.connect
+      gnutella.send_query("doors")
+    end
+    
+    while true
+      sleep 100
+    end
+  end 
+  
+  #save pid
+  f = File.new Rubtella::Config::PID_FILE, File::CREAT|File::TRUNC|File::RDWR, 0644
+  f.puts @p
+  f.close
+  
+  Process.detach(@p)
+
+when "stop"
+  unless File.exist? Rubtella::Config::PID_FILE
+    puts 'No pid file found'
+  else
+    f = File.open Rubtella::Config::PID_FILE
+    pid = f.read.to_i
+    Process.kill "TERM", pid
+  end
+else
+  puts "[start|stop]"
+end

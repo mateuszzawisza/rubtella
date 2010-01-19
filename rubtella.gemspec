@@ -9,11 +9,11 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Mateusz Zawisza"]
-  s.date = %q{2010-01-10}
-  s.default_executable = %q{rubtellad}
+  s.date = %q{2010-01-19}
+  s.default_executable = %q{rubtella}
   s.description = %q{Library for Gnuttale in Ruby}
   s.email = %q{mateusz.zawisza@gmail.com}
-  s.executables = ["rubtellad"]
+  s.executables = ["rubtella"]
   s.extra_rdoc_files = [
     "README"
   ]
@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
      "README",
      "Rakefile",
      "VERSION",
-     "bin/rubtellad",
+     "bin/rubtella",
      "lib/config/config.rb",
      "lib/rubtella.rb",
      "lib/rubtella/errors.rb",
