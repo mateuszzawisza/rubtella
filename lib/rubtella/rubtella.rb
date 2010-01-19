@@ -103,7 +103,6 @@ module Rubtella
         @@logger.info 'connection established'
         @connected = @peer
         @@logger.info "Connected with #{@connected.ip} #{@connected.port}"
-        @@logger.info "Connected with #{@connected.ip} #{@connected.port}"
         
         manage_connection stream
       else
@@ -114,8 +113,8 @@ module Rubtella
       end
     rescue Timeout::Error,Errno::ECONNREFUSED
       @@logger.info "Timeout"
-      @peer = resp.peers.shift
-      connect
+      @peer = @peers.shift
+      retry
     rescue => e
       @@logger.info e.to_s
     end
@@ -154,6 +153,16 @@ module Rubtella
       
       parsed.message
 
+    end
+
+    def send_ping
+      stream = TCPSocket.new @connected.ip, @connected.port
+      query = TCPData::Builder::Ping.new
+      @@logger.info "sending ping"
+      stream.send query.build, 0
+      @@logger.info 'we\'re listening..'
+      resp = stream.recv 1000
+      parse(resp)
     end
 
     def send_query(text)

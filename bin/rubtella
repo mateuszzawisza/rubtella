@@ -22,7 +22,8 @@ when "start"
     Thread.new do
       gnutella = Rubtella::Sender.new
       gnutella.connect
-      gnutella.send_query("doors")
+      gnutella.send_ping
+      #gnutella.send_query("doors")
     end
     
     while true
