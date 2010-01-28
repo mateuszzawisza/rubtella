@@ -26,7 +26,7 @@ class RubtellaLogger
   def info(message)
     begin
       @rubylogger.info message
-      @growl.notify "rubtella log", "Rubtella", message
+      #@growl.notify "rubtella log", "Rubtella", message
     rescue
       puts 'logger error'
     end

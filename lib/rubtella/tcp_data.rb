@@ -51,6 +51,7 @@ module Rubtella
         
         build_message
 
+        @payload_length = @payload.length
         @data = [@guid, @payload_type, @ttl, @hops, @payload_length, @payload]
 
         @binary_data = @data.flatten.pack("C*")

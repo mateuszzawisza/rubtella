@@ -92,13 +92,16 @@ module Rubtella
       timeout(5) do 
         stream = TCPSocket.new @peer.ip, @peer.port
         stream.send handshake_req, 0
+        @@logger.info handshake_req
       end
       @response = stream.recv 1000
       
       resp = HTTPData::Parser.new @response 
-      stream.send handshake_resp, 0
+      @@logger.info @response
 
       if resp.ok?
+        stream.send handshake_resp, 0
+        @@logger.info handshake_resp
         #connection established
         @@logger.info 'connection established'
         @connected = @peer
@@ -132,7 +135,8 @@ module Rubtella
     def manage_connection stream
       loop do
         @@logger.info 'we\'re listening..'
-        resp = stream.recv 1000
+        resp = stream.recv 10000
+        @@logger.info resp
         if parse(resp) == "ping"
           pong = TCPData::Builder::Pong.new
           stream.send pong.build , 0 
